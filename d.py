@@ -72,7 +72,7 @@ for col in cols_to_numeric:
 df["التاريخ"] = pd.to_datetime(df["التاريخ"], dayfirst=True)
 
 # ---------------- Sidebar ---------------- #
-st.sidebar.image("logo.png")
+st.sidebar.image("Annotation 2026-03-11 213816.png")
 
 # فلتر التاريخ
 min_date = df["التاريخ"].min()
