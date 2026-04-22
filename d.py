@@ -511,8 +511,8 @@ elif min_val >= threshold_warning:
 else:
     worst_day = trend.idxmin()
     st.error(f"🚨 أسوأ يوم: {worst_day.date()} بنسبة {min_val:.1f}%")
-    
-    
+
+
 st.markdown("## 📋 البيانات بعد الفلترة")
 
 green_cols = [
@@ -524,11 +524,7 @@ green_cols = [
     "نسبه التشغيل"
 ]
 
-# تلوين الأعمدة بالأخضر
-def highlight_green_cols(val):
-    return "background-color: lightgreen; color: black; font-weight: bold;"
-
-# تلوين الصفوف بالأحمر
+# ---------------- تلوين الصفوف بالأحمر ---------------- #
 def highlight_row(row):
     try:
         total_operation = row["اجمالي سيارات التشغيل"]
@@ -537,31 +533,48 @@ def highlight_row(row):
         ratio = ((total_operation - outside_operation) / total_operation) * 100 if total_operation else 0
 
         if ratio < 97:
-             return ['background-color: #ffcccc; color: black; font-weight: bold;'] * len(row)
+            return ['background-color: #ffcccc; color: black; font-weight: bold;'] * len(row)
         else:
             return [''] * len(row)
     except:
         return [''] * len(row)
 
-# 👇 هنا السحر
-styled_df = (
-    filtered_df.style
-    .apply(highlight_row, axis=1)  # الأحمر الأول
-    .applymap(highlight_green_cols, subset=green_cols)  # الأخضر للأعمدة
-    .format({
-        "نسبه التشغيل": "{:.1f}%",
-    })
-    .format(lambda x: f"{int(x)}" if isinstance(x, (int, float)) and not pd.isna(x) else x)
+
+# ---------------- Styling ---------------- #
+styled_df = filtered_df.style.apply(highlight_row, axis=1)
+
+# تلوين الأعمدة الخضراء
+for col in green_cols:
+    if col in filtered_df.columns:
+        styled_df = styled_df.set_properties(
+            subset=[col],
+            **{
+                "background-color": "lightgreen",
+                "color": "black",
+                "font-weight": "bold"
+            }
+        )
+
+# تنسيق الأرقام
+styled_df = styled_df.format({
+    "نسبه التشغيل": "{:.1f}%"
+})
+
+styled_df = styled_df.format(
+    lambda x: f"{int(x)}" if isinstance(x, (int, float)) and not pd.isna(x) else x
 )
 
+# عرض الجدول
 st.dataframe(styled_df, use_container_width=True)
 
+
+# ---------------- Excel Export ---------------- #
 from io import BytesIO
 
 output = BytesIO()
 
 with pd.ExcelWriter(output, engine='openpyxl') as writer:
-    df.to_excel(writer, index=False, sheet_name='Data')
+    filtered_df.to_excel(writer, index=False, sheet_name='Data')
 
 st.download_button(
     "📥 Download Excel",
