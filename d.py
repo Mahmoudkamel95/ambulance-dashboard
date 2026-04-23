@@ -52,7 +52,9 @@ def load_data():
     return pd.read_csv(url)
 
 df = load_data()
-
+if st.sidebar.button("🔄 تحديث البيانات"):
+    st.cache_data.clear()
+    st.rerun()
 # ---------------- تنظيف البيانات ---------------- #
 df.columns = df.columns.str.strip()
 
