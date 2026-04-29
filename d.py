@@ -173,28 +173,46 @@ broken_ratio = (broken_cars / total_cars) * 100 if total_cars else 0
 # ---------------- KPI ---------------- #
 st.markdown(f"## 📊 المؤشرات الحالية (📅 {last_day.date()})")
 st.info("📌 المؤشرات تمثل آخر يوم داخل الفترة المختارة وليس الوقت الحالي")
-col1, col2, col3, col4 = st.columns(4)
+col1, col2= st.columns(2)
 
 col1.metric("🚑 إجمالي السيارات", int(total_cars),border=True)
 col2.metric(
     "⚙️ إجمالي التشغيل",
     int(total_operation),
-    delta=int(total_operation - prev_operation),border=True
+    border=True
 )
-col3.metric(
-    "❌ خارج التشغيل",
-    int(outside_operation),border=True
-)
-col4.metric(
+
+# تحديد اللون حسب القيمة
+color = "#ff4d4d" if outside_operation > 0 else "#28a745"  # أحمر لو فيه مشكلة / أخضر لو 0
+
+st.markdown(f"""
+<div style="
+    background-color:{color};
+    padding:20px;
+    border-radius:15px;
+    text-align:center;
+    color:white;
+    font-size:20px;
+    font-weight:bold;">
+    ❌ خارج التشغيل <br> {int(outside_operation)}
+</div>
+""", unsafe_allow_html=True)
+    
+    
+    
+col5, col6, col7 = st.columns(3)  
+    
+col5.metric(
     "✅ داخل التشغيل",
     int(inside_operation),
     delta=int(inside_operation - prev_inside),border=True
 )
 
-col5, col6, col7 = st.columns(3)
 
-col5.metric("🔥 السيارات العاملة", int(inside_operation),border=True)
-col6.metric("📈 نسبة السيارات العاملة", f"{working_ratio:.1f}%",border=True)
+
+
+col6.metric("📈 نسبة السيارات العاملة", f"{working_ratio:.1f}%",
+    delta=f"{operation_ratio - prev_ratio:.1f}%",border=True)
 col7.metric(
     "⚡ نسبة التشغيل",
     f"{operation_ratio:.1f}%",
