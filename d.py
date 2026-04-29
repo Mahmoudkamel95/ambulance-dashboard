@@ -348,7 +348,7 @@ if not low_perf.empty:
 gov_grouped_sorted = gov_grouped.sort_values("نسبة التشغيل", ascending=False)
 
 # أفضل 5
-best = gov_grouped_sorted.head(5).copy()
+best = gov_grouped_sorted.head(10).copy()
 
 # Threshold للأداء الضعيف
 threshold = 97
