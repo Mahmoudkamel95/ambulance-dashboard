@@ -369,7 +369,7 @@ col1, col2 = st.columns(2)
 
 # ---------------- أفضل محافظات ---------------- #
 with col1:
-    st.markdown("### 🟢 أفضل 5 محافظات")
+    st.markdown("### 🟢 أداء المحافظات")
 
     st.dataframe(
         best.style.format({"نسبة التشغيل": "{:.1f}%"}),
