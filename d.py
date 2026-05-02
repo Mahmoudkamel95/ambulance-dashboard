@@ -396,14 +396,7 @@ with col2:
     if worst.empty:
         st.success("✅ كل المحافظات تعمل بكفاءة عالية (≥ 97%)")
     else:
-        st.dataframe(
-    best.style.format({
-        "اجمالي سيارات التشغيل": "{:.0f}",
-        "اجمالي سيارات المنطقه العامله  ولكن خارج التشغيل": "{:.0f}",
-        "نسبة التشغيل": "{:.1f}%"
-    }),
-    use_container_width=True
-)
+   st.dataframe( worst.style.format({"نسبة التشغيل": "{:.1f}%"}), use_container_width=True )
 
         # Insight
         worst_gov = worst.index[0]
