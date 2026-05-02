@@ -372,9 +372,13 @@ with col1:
     st.markdown("### 🟢 أداء المحافظات")
 
     st.dataframe(
-        best.style.format({"نسبة التشغيل": "{:.1f}%"}),
-        use_container_width=True
-    )
+    best.style.format({
+        "اجمالي سيارات التشغيل": "{:.0f}",
+        "اجمالي سيارات المنطقه العامله  ولكن خارج التشغيل": "{:.0f}",
+        "نسبة التشغيل": "{:.1f}%"
+    }),
+    use_container_width=True
+)
 
     # Insight
     top_gov = best.index[0]
