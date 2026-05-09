@@ -242,7 +242,7 @@ st.markdown("## 📈 تحليل البيانات")
 # حسب الإقليم
 
 # حسب الإقليم (نسبة التشغيل)
-# st.markdown("### 📊 نسبة التشغيل حسب الإقليم")
+# st.markdown("### 📊 نسبة تشغيل الاقاليم")
 region_grouped = filtered_df.groupby("الاقليم").agg({
     "اجمالي سيارات التشغيل": "sum",
     "اجمالي سيارات المنطقه العامله  ولكن خارج التشغيل": "sum"
@@ -278,7 +278,7 @@ gov_grouped["نسبة التشغيل"] = gov_grouped.apply(
 
 import plotly.express as px
 
-st.markdown("### 📊 نسبة التشغيل حسب الإقليم")
+st.markdown("### 📊 نسبة تشغيل الاقاليم")
 
 fig1 = px.bar(
     region_grouped.reset_index(),
@@ -299,7 +299,7 @@ fig1.update_layout(
 
 st.plotly_chart(fig1, use_container_width=True)
 
-st.markdown("### 📊 نسبة التشغيل حسب المحافظة")
+st.markdown("### 📊نسبة تشغيل المحافظات")
 
 fig2 = px.bar(
     gov_grouped.reset_index(),
