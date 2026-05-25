@@ -610,7 +610,11 @@ from reportlab.platypus import (
 )
 
 from reportlab.lib import colors
-from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.styles import (
+    getSampleStyleSheet,
+    ParagraphStyle
+)
+
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.units import cm
 
@@ -623,13 +627,15 @@ from io import BytesIO
 
 def arabic_text(text):
 
-    reshaped = arabic_reshaper.reshape(str(text))
+    text = str(text)
+
+    reshaped = arabic_reshaper.reshape(text)
 
     bidi_text = get_display(reshaped)
 
     return bidi_text
 
-# ========================= تسجيل الخط ========================= #
+# ========================= تسجيل الخط العربي ========================= #
 
 pdfmetrics.registerFont(
     TTFont('Arabic', 'Cairo-Regular.ttf')
@@ -652,17 +658,63 @@ elements = []
 
 styles = getSampleStyleSheet()
 
-# ========================= العنوان ========================= #
+# ========================= Arabic Styles ========================= #
 
-title_style = styles['Title']
-title_style.fontName = 'Arabic'
+arabic_style = ParagraphStyle(
+
+    'ArabicStyle',
+
+    parent=styles['BodyText'],
+
+    fontName='Arabic',
+
+    fontSize=14,
+
+    leading=24,
+
+    alignment=2,  # Right Align
+)
+
+title_style = ParagraphStyle(
+
+    'TitleStyle',
+
+    parent=styles['Title'],
+
+    fontName='Arabic',
+
+    fontSize=26,
+
+    leading=40,
+
+    alignment=1,
+)
+
+heading_style = ParagraphStyle(
+
+    'HeadingStyle',
+
+    parent=styles['Heading2'],
+
+    fontName='Arabic',
+
+    fontSize=18,
+
+    leading=30,
+
+    alignment=2,
+)
+
+# ========================= عنوان التقرير ========================= #
 
 title = Paragraph(
 
     arabic_text("""
-    🚑 تقرير التشغيل للمنطقة الجنوبية للإسعاف
+
+    تقرير التشغيل للمنطقة الجنوبية للإسعاف
 
     رئيس المنطقة الجنوبية / د أحمد سيف
+
     """),
 
     title_style
@@ -674,16 +726,13 @@ elements.append(Spacer(1, 1*cm))
 
 # ========================= التاريخ ========================= #
 
-date_style = styles['BodyText']
-date_style.fontName = 'Arabic'
-
 elements.append(
 
     Paragraph(
 
         arabic_text(f"تاريخ التقرير : {last_day.date()}"),
 
-        date_style
+        arabic_style
     )
 )
 
@@ -735,26 +784,38 @@ kpi_data = [
 ]
 
 table = Table(
+
     kpi_data,
+
     colWidths=[12*cm, 8*cm],
+
     repeatRows=1
 )
 
 table.setStyle(TableStyle([
 
+    # Header
     ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#1f4e78")),
+
     ('TEXTCOLOR', (0,0), (-1,0), colors.white),
 
+    # Rows
     ('BACKGROUND', (0,1), (-1,-1), colors.whitesmoke),
 
+    # Grid
     ('GRID', (0,0), (-1,-1), 1, colors.grey),
 
+    # Font
     ('FONTNAME', (0,0), (-1,-1), 'Arabic'),
 
     ('FONTSIZE', (0,0), (-1,-1), 13),
 
+    # Align
     ('ALIGN', (0,0), (-1,-1), 'CENTER'),
 
+    ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+
+    # Padding
     ('TOPPADDING', (0,0), (-1,-1), 10),
 
     ('BOTTOMPADDING', (0,0), (-1,-1), 10),
@@ -767,13 +828,12 @@ elements.append(PageBreak())
 
 # ========================= الشارت الأول ========================= #
 
-heading_style = styles['Heading2']
-heading_style.fontName = 'Arabic'
-
 elements.append(
 
     Paragraph(
-        arabic_text("📊 التشغيل حسب الإقليم"),
+
+        arabic_text("التشغيل حسب الإقليم"),
+
         heading_style
     )
 )
@@ -796,7 +856,9 @@ elements.append(PageBreak())
 elements.append(
 
     Paragraph(
-        arabic_text("📊 التشغيل حسب المحافظة"),
+
+        arabic_text("التشغيل حسب المحافظة"),
+
         heading_style
     )
 )
@@ -819,18 +881,24 @@ elements.append(PageBreak())
 elements.append(
 
     Paragraph(
-        arabic_text("📊 أداء المحافظات"),
+
+        arabic_text("أداء المحافظات"),
+
         heading_style
     )
 )
 
 elements.append(Spacer(1, 0.5*cm))
 
+# تجهيز البيانات
+
 gov_table = gov_grouped.reset_index().copy()
 
 gov_table["نسبة التشغيل"] = gov_table["نسبة التشغيل"].apply(
     lambda x: f"{x:.1f}%"
 )
+
+# بيانات الجدول
 
 table_data = [[
 
@@ -843,6 +911,8 @@ table_data = [[
     arabic_text("نسبة التشغيل")
 
 ]]
+
+# إضافة الصفوف
 
 for _, row in gov_table.iterrows():
 
@@ -858,6 +928,8 @@ for _, row in gov_table.iterrows():
 
     ])
 
+# إنشاء الجدول
+
 gov_perf_table = Table(
 
     table_data,
@@ -867,25 +939,39 @@ gov_perf_table = Table(
     repeatRows=1
 )
 
+# Style
+
 gov_perf_table.setStyle(TableStyle([
 
+    # Header
     ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#1f4e78")),
 
     ('TEXTCOLOR', (0,0), (-1,0), colors.white),
 
-    ('FONTNAME', (0,0), (-1,-1), 'Arabic'),
+    # Rows
+    ('BACKGROUND', (0,1), (-1,-1), colors.whitesmoke),
 
+    # Grid
     ('GRID', (0,0), (-1,-1), 1, colors.grey),
 
-    ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+    # Font
+    ('FONTNAME', (0,0), (-1,-1), 'Arabic'),
 
     ('FONTSIZE', (0,0), (-1,-1), 12),
 
+    # Align
+    ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+
+    ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+
+    # Padding
     ('TOPPADDING', (0,0), (-1,-1), 10),
 
     ('BOTTOMPADDING', (0,0), (-1,-1), 10),
 
 ]))
+
+# تلوين المحافظات الضعيفة
 
 for i, row in enumerate(gov_table.itertuples(), start=1):
 
@@ -905,17 +991,21 @@ elements.append(gov_perf_table)
 
 elements.append(PageBreak())
 
-# ========================= تفاصيل المشكلات ========================= #
+# ========================= تفاصيل المشكلات التشغيلية ========================= #
 
 elements.append(
 
     Paragraph(
-        arabic_text("🚨 تفاصيل المشكلات التشغيلية"),
+
+        arabic_text("تفاصيل المشكلات التشغيلية"),
+
         heading_style
     )
 )
 
 elements.append(Spacer(1, 0.5*cm))
+
+# تجهيز البيانات
 
 issues_table = filtered_df.groupby("المحافظه").agg({
 
@@ -928,6 +1018,8 @@ issues_table = filtered_df.groupby("المحافظه").agg({
     "سيارات غياب بدون اذن": "sum"
 
 }).reset_index()
+
+# بيانات الجدول
 
 table_data = [[
 
@@ -942,6 +1034,8 @@ table_data = [[
     arabic_text("غياب بدون إذن")
 
 ]]
+
+# إضافة الصفوف
 
 for _, row in issues_table.iterrows():
 
@@ -959,6 +1053,8 @@ for _, row in issues_table.iterrows():
 
     ])
 
+# إنشاء الجدول
+
 issues_perf_table = Table(
 
     table_data,
@@ -968,25 +1064,60 @@ issues_perf_table = Table(
     repeatRows=1
 )
 
+# Style
+
 issues_perf_table.setStyle(TableStyle([
 
+    # Header
     ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#0f172a")),
 
     ('TEXTCOLOR', (0,0), (-1,0), colors.white),
 
-    ('FONTNAME', (0,0), (-1,-1), 'Arabic'),
+    # Rows
+    ('BACKGROUND', (0,1), (-1,-1), colors.whitesmoke),
 
+    # Grid
     ('GRID', (0,0), (-1,-1), 1, colors.grey),
 
-    ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+    # Font
+    ('FONTNAME', (0,0), (-1,-1), 'Arabic'),
 
     ('FONTSIZE', (0,0), (-1,-1), 11),
 
+    # Align
+    ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+
+    ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+
+    # Padding
     ('TOPPADDING', (0,0), (-1,-1), 10),
 
     ('BOTTOMPADDING', (0,0), (-1,-1), 10),
 
 ]))
+
+# تلوين المحافظات اللي فيها مشاكل
+
+for i, row in enumerate(issues_table.itertuples(), start=1):
+
+    total_issues = (
+
+        row[2] +
+        row[3] +
+        row[4] +
+        row[5]
+
+    )
+
+    if total_issues > 0:
+
+        issues_perf_table.setStyle(TableStyle([
+
+            ('BACKGROUND', (0, i), (-1, i), colors.HexColor("#ffe5e5")),
+
+            ('TEXTCOLOR', (0, i), (-1, i), colors.red),
+
+        ]))
 
 elements.append(issues_perf_table)
 
@@ -998,7 +1129,7 @@ doc.build(elements)
 
 st.download_button(
 
-    label="📄 تحميل التقرير PDF",
+    label="تحميل التقرير PDF",
 
     data=pdf_buffer.getvalue(),
 
@@ -1006,5 +1137,3 @@ st.download_button(
 
     mime="application/pdf"
 )
-
-
