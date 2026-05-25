@@ -618,6 +618,7 @@ from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.units import cm
 from reportlab.lib.styles import getSampleStyleSheet
+
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 
@@ -625,28 +626,29 @@ import arabic_reshaper
 from bidi.algorithm import get_display
 
 
-# ========================= KALAIDO FIX ========================= #
-import plotly.io as pio
-
-pio.kaleido.scope.default_format = "png"
-pio.kaleido.scope.default_scale = 3
-
-
 # ========================= ARABIC SUPPORT ========================= #
 def arabic_text(text):
     return get_display(arabic_reshaper.reshape(str(text)))
 
 
-pdfmetrics.registerFont(TTFont('Arabic', 'arial.ttf'))
+# ❌ مهم: لا تستخدم arial.ttf في السيرفر
+# استخدم الخط الافتراضي بدل تسجيل خط خارجي
+# pdfmetrics.registerFont(TTFont('Arabic', 'arial.ttf'))
 
 
-# ========================= تحويل الشارتات إلى MEMORY ========================= #
+# ========================= FIX KALAIDO (IMPORTANT) ========================= #
+# لازم kaleido يكون متثبت في requirements.txt
+# kaleido>=0.2.1
+
+# ========================= CONVERT PLOTS TO IMAGES ========================= #
+# مهم: استخدم to_image بدل write_image
+
 region_img = fig1.to_image(format="png", scale=3)
 gov_img = fig2.to_image(format="png", scale=3)
 trend_img = fig.to_image(format="png", scale=3)
 
 
-# ========================= PDF SETUP ========================= #
+# ========================= PDF BUFFER ========================= #
 pdf_buffer = io.BytesIO()
 
 doc = SimpleDocTemplate(
@@ -665,11 +667,11 @@ styles = getSampleStyleSheet()
 # ========================= TITLE ========================= #
 elements.append(
     Paragraph(
-        "<font size=24 color='#1f4e78'><b>🚑 Southern Region Operational Report</b></font>",
+        "<font size=22><b>🚑 Operational Report</b></font>",
         styles["Title"]
     )
 )
-elements.append(Spacer(1, 1*cm))
+elements.append(Spacer(1, 0.5*cm))
 
 
 # ========================= KPI TABLE ========================= #
@@ -691,7 +693,6 @@ table.setStyle(TableStyle([
     ("TEXTCOLOR", (0,0), (-1,0), colors.white),
     ("BACKGROUND", (0,1), (-1,-1), colors.whitesmoke),
     ("GRID", (0,0), (-1,-1), 1, colors.grey),
-    ("FONTNAME", (0,0), (-1,-1), "Arabic"),
     ("ALIGN", (0,0), (-1,-1), "CENTER"),
 ]))
 
@@ -699,28 +700,28 @@ elements.append(table)
 elements.append(PageBreak())
 
 
-# ========================= REGION CHART ========================= #
-elements.append(Paragraph("📊 Operation By Region", styles["Heading2"]))
-elements.append(Image(io.BytesIO(region_img), width=24*cm, height=10*cm))
-elements.append(PageBreak())
+# ========================= IMAGE HELPER ========================= #
+def add_image(img_bytes, title):
+    elements.append(Paragraph(title, styles["Heading2"]))
+    elements.append(Spacer(1, 0.3*cm))
+
+    img_buffer = io.BytesIO(img_bytes)
+
+    elements.append(
+        Image(img_buffer, width=24*cm, height=10*cm)
+    )
+    elements.append(PageBreak())
 
 
-# ========================= GOV CHART ========================= #
-elements.append(Paragraph("📊 Operation By Governorate", styles["Heading2"]))
-elements.append(Image(io.BytesIO(gov_img), width=24*cm, height=10*cm))
-elements.append(PageBreak())
+# ========================= CHARTS ========================= #
+add_image(region_img, "📊 Operation By Region")
+add_image(gov_img, "📊 Operation By Governorate")
+add_image(trend_img, "📈 Trend Analysis")
 
 
-# ========================= TREND CHART ========================= #
-elements.append(Paragraph("📈 Trend Analysis", styles["Heading2"]))
-elements.append(Image(io.BytesIO(trend_img), width=24*cm, height=10*cm))
-elements.append(PageBreak())
-
-
-# ========================= TABLE DETAILS ========================= #
+# ========================= GOVERNORATE TABLE ========================= #
 gov_table = gov_grouped.reset_index().copy()
 gov_table["نسبة التشغيل"] = gov_table["نسبة التشغيل"].apply(lambda x: f"{x:.1f}%")
-
 
 table_data = [[
     arabic_text("المحافظة"),
@@ -737,7 +738,6 @@ for _, row in gov_table.iterrows():
         row["نسبة التشغيل"]
     ])
 
-
 gov_perf_table = Table(table_data, colWidths=[7*cm, 6*cm, 6*cm, 5*cm])
 
 gov_perf_table.setStyle(TableStyle([
@@ -745,12 +745,10 @@ gov_perf_table.setStyle(TableStyle([
     ("TEXTCOLOR", (0,0), (-1,0), colors.white),
     ("BACKGROUND", (0,1), (-1,-1), colors.whitesmoke),
     ("GRID", (0,0), (-1,-1), 1, colors.grey),
-    ("FONTNAME", (0,0), (-1,-1), "Arabic"),
     ("ALIGN", (0,0), (-1,-1), "CENTER"),
 ]))
 
 elements.append(gov_perf_table)
-elements.append(PageBreak())
 
 
 # ========================= BUILD PDF ========================= #
