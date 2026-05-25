@@ -605,6 +605,519 @@ st.download_button(
 )
 
 
+# ========================= حفظ الشارتات كصور HD ========================= #
+
+# بعد fig1
+fig1.write_image("region_chart.png", scale=3)
+
+# بعد fig2
+fig2.write_image("gov_chart.png", scale=3)
+
+# بعد fig الخاص بالـ Trend
+fig.write_image("trend_chart.png", scale=3)
+
+
+# ========================= PDF REPORT ========================= #
+import arabic_reshaper
+from bidi.algorithm import get_display
+
+# ========================= دعم العربي ========================= #
+
+def arabic_text(text):
+
+    reshaped_text = arabic_reshaper.reshape(text)
+
+    bidi_text = get_display(reshaped_text)
+
+    return bidi_text
+
+from reportlab.platypus import (
+    SimpleDocTemplate,
+    Paragraph,
+    Spacer,
+    Image,
+    Table,
+    TableStyle,
+    PageBreak
+)
+
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.pagesizes import A4, landscape
+from reportlab.lib.units import cm
+
+from io import BytesIO
+
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+
+# تسجيل الخط العربي
+pdfmetrics.registerFont(
+    TTFont('Arabic', 'arial.ttf')
+)
+
+# إنشاء الـ PDF داخل الذاكرة
+pdf_buffer = BytesIO()
+
+# إعداد الملف
+doc = SimpleDocTemplate(
+    pdf_buffer,
+    pagesize=landscape(A4),
+    rightMargin=20,
+    leftMargin=20,
+    topMargin=20,
+    bottomMargin=20
+)
+
+elements = []
+styles = getSampleStyleSheet()
+
+# ========================= عنوان التقرير ========================= #
+
+title = Paragraph(
+    """
+    <font size=24 color='#1f4e78'>
+    <b>🚑 Southern Region Operational Report</b>
+    </font>
+    """,
+    styles['Title']
+)
+elements.append(title)
+
+elements.append(
+    Paragraph(
+        f"<b>Report Date:</b> {last_day.date()}",
+        styles['BodyText']
+    )
+)
+
+elements.append(Spacer(1, 1*cm))
+
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+
+import arabic_reshaper
+from bidi.algorithm import get_display
+
+# ================= دعم العربي ================= #
+
+def arabic_text(text):
+
+    reshaped = arabic_reshaper.reshape(text)
+
+    bidi_text = get_display(reshaped)
+
+    return bidi_text
+
+# ================= تسجيل الخط العربي ================= #
+
+pdfmetrics.registerFont(
+    TTFont('Arabic', 'arial.ttf')
+)
+# ========================= KPI TABLE ========================= #
+
+kpi_data = [
+
+    [
+        arabic_text("المؤشر"),
+        arabic_text("القيمة")
+    ],
+
+    [
+        arabic_text("🚑 إجمالي السيارات"),
+        int(total_cars)
+    ],
+
+    [
+        arabic_text("⚙️ إجمالي التشغيل"),
+        int(total_operation)
+    ],
+
+    [
+        arabic_text("❌ خارج التشغيل"),
+        int(outside_operation)
+    ],
+
+    [
+        arabic_text("✅ داخل التشغيل"),
+        int(inside_operation)
+    ],
+
+    [
+        arabic_text("📈 نسبة التشغيل"),
+        f"{operation_ratio:.1f}%"
+    ],
+
+    [
+        arabic_text("🏭 سيارات التوكيل"),
+        int(agency_cars)
+    ],
+
+    [
+        arabic_text("🚫 السيارات المعطلة"),
+        int(broken_cars)
+    ],
+]
+
+table = Table(
+    kpi_data,
+    colWidths=[12*cm, 8*cm]
+)
+
+table.setStyle(TableStyle([
+
+    # Header
+    ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#1f4e78")),
+    ('TEXTCOLOR', (0,0), (-1,0), colors.white),
+
+    # باقي الجدول
+    ('BACKGROUND', (0,1), (-1,-1), colors.whitesmoke),
+
+    ('GRID', (0,0), (-1,-1), 1, colors.grey),
+
+    # الخط العربي
+    ('FONTNAME', (0,0), (-1,-1), 'Arabic'),
+
+    ('FONTSIZE', (0,0), (-1,-1), 13),
+
+    ('BOTTOMPADDING', (0,0), (-1,0), 12),
+
+    ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+
+]))
+
+
+elements.append(table)
+
+elements.append(Spacer(1, 1*cm))
+
+elements.append(PageBreak())
+
+# ========================= الشارت الأول ========================= #
+
+elements.append(
+    Paragraph(
+        "<font size=18><b>📊 Operation By Region</b></font>",
+        styles['Heading2']
+    )
+)
+
+elements.append(
+    Image(
+        "region_chart.png",
+        width=24*cm,
+        height=10*cm
+    )
+)
+
+elements.append(Spacer(1, 1*cm))
+elements.append(PageBreak())
+# ========================= الشارت الثاني ========================= #
+
+elements.append(
+    Paragraph(
+        "<font size=18><b>📊 Operation By Governorate</b></font>",
+        styles['Heading2']
+    )
+)
+
+elements.append(
+    Image(
+        "gov_chart.png",
+        width=24*cm,
+        height=10*cm
+    )
+)
+
+elements.append(Spacer(1, 1*cm))
+elements.append(PageBreak())
+# ========================= الشارت الثالث ========================= #
+
+# ========================= أداء المحافظات ========================= #
+
+elements.append(
+    Paragraph(
+        "<font size=18><b>📊 Governorates Performance</b></font>",
+        styles['Heading2']
+    )
+)
+
+elements.append(Spacer(1, 0.5*cm))
+
+# ---------------- تجهيز الداتا ---------------- #
+
+gov_table = gov_grouped.reset_index().copy()
+
+# تنسيق النسبة
+gov_table["نسبة التشغيل"] = gov_table["نسبة التشغيل"].apply(
+    lambda x: f"{x:.1f}%"
+)
+
+# ---------------- بيانات الجدول ---------------- #
+
+table_data = [[
+
+    arabic_text("المحافظة"),
+
+    arabic_text("إجمالي التشغيل"),
+
+    arabic_text("خارج التشغيل"),
+
+    arabic_text("نسبة التشغيل")
+
+]]
+
+# ---------------- إضافة الصفوف ---------------- #
+
+for _, row in gov_table.iterrows():
+
+    table_data.append([
+
+        arabic_text(str(row["المحافظه"])),
+
+        int(row["اجمالي سيارات التشغيل"]),
+
+        int(row["اجمالي سيارات المنطقه العامله  ولكن خارج التشغيل"]),
+
+        row["نسبة التشغيل"]
+
+    ])
+
+# ---------------- إنشاء الجدول ---------------- #
+
+gov_perf_table = Table(
+
+    table_data,
+
+    colWidths=[7*cm, 6*cm, 6*cm, 5*cm],
+
+    repeatRows=1
+
+)
+
+# ---------------- التصميم ---------------- #
+
+gov_perf_table.setStyle(TableStyle([
+
+    # Header
+    ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#1f4e78")),
+
+    ('TEXTCOLOR', (0,0), (-1,0), colors.white),
+
+    ('FONTNAME', (0,0), (-1,-1), 'Arabic'),
+
+    ('FONTSIZE', (0,0), (-1,0), 13),
+
+    # Rows
+    ('BACKGROUND', (0,1), (-1,-1), colors.whitesmoke),
+
+    ('TEXTCOLOR', (0,1), (-1,-1), colors.black),
+
+    # Grid
+    ('GRID', (0,0), (-1,-1), 1, colors.grey),
+
+    # Alignment
+    ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+
+    ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+
+    # Padding
+    ('TOPPADDING', (0,0), (-1,-1), 10),
+
+    ('BOTTOMPADDING', (0,0), (-1,-1), 10),
+
+    # Font
+    ('FONTNAME', (0,1), (-1,-1), 'Arabic'),
+
+    ('FONTSIZE', (0,1), (-1,-1), 11),
+
+]))
+
+# ---------------- تلوين الأداء الضعيف ---------------- #
+
+for i, row in enumerate(gov_table.itertuples(), start=1):
+
+    ratio = float(row[-1].replace("%", ""))
+
+    if ratio < 97:
+
+        gov_perf_table.setStyle(TableStyle([
+
+            ('BACKGROUND', (0, i), (-1, i), colors.HexColor("#ffe5e5")),
+
+            ('TEXTCOLOR', (0, i), (-1, i), colors.red),
+
+            ('FONTNAME', (0, i), (-1, i), 'Arabic'),
+
+        ]))
+
+# ---------------- إضافة الجدول ---------------- #
+
+elements.append(gov_perf_table)
+
+elements.append(Spacer(1, 1*cm))
+
+elements.append(PageBreak())
+
+# ========================= تفاصيل المشكلات التشغيلية ========================= #
+
+elements.append(
+    Paragraph(
+        "<font size=18><b>🚨 Operational Details</b></font>",
+        styles['Heading2']
+    )
+)
+
+elements.append(Spacer(1, 0.5*cm))
+
+# ---------------- تجهيز الداتا ---------------- #
+
+issues_table = filtered_df.groupby("المحافظه").agg({
+
+    "سيارات بالراحة": "sum",
+
+    "سيارات بدون طاقم (عجز )": "sum",
+
+    "سيارات  اجازة مسبقة": "sum",
+
+    "سيارات غياب بدون اذن": "sum"
+
+}).reset_index()
+
+# ---------------- تجهيز الجدول ---------------- #
+
+table_data = [[
+
+    arabic_text("المحافظة"),
+
+    arabic_text("سيارات بالراحة"),
+
+    arabic_text("بدون طاقم"),
+
+    arabic_text("إجازة مسبقة"),
+
+    arabic_text("غياب بدون إذن")
+
+]]
+
+# ---------------- إضافة الصفوف ---------------- #
+
+for _, row in issues_table.iterrows():
+
+    table_data.append([
+
+        arabic_text(str(row["المحافظه"])),
+
+        int(row["سيارات بالراحة"]),
+
+        int(row["سيارات بدون طاقم (عجز )"]),
+
+        int(row["سيارات  اجازة مسبقة"]),
+
+        int(row["سيارات غياب بدون اذن"])
+
+    ])
+
+# ---------------- إنشاء الجدول ---------------- #
+
+issues_perf_table = Table(
+
+    table_data,
+
+    colWidths=[6*cm, 4*cm, 4*cm, 4*cm, 5*cm],
+
+    repeatRows=1
+
+)
+
+# ---------------- التصميم ---------------- #
+
+issues_perf_table.setStyle(TableStyle([
+
+    # Header
+    ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#0f172a")),
+
+    ('TEXTCOLOR', (0,0), (-1,0), colors.white),
+
+    ('FONTNAME', (0,0), (-1,-1), 'Arabic'),
+
+    ('FONTSIZE', (0,0), (-1,0), 12),
+
+    # Rows
+    ('BACKGROUND', (0,1), (-1,-1), colors.whitesmoke),
+
+    ('TEXTCOLOR', (0,1), (-1,-1), colors.black),
+
+    # Grid
+    ('GRID', (0,0), (-1,-1), 1, colors.grey),
+
+    # Alignment
+    ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+
+    ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+
+    # Padding
+    ('TOPPADDING', (0,0), (-1,-1), 10),
+
+    ('BOTTOMPADDING', (0,0), (-1,-1), 10),
+
+    # الخط العربي
+    ('FONTNAME', (0,1), (-1,-1), 'Arabic'),
+
+    ('FONTSIZE', (0,1), (-1,-1), 11),
+
+]))
+
+# ---------------- تلوين الصفوف الحرجة ---------------- #
+
+for i, row in enumerate(issues_table.itertuples(), start=1):
+
+    total_issues = (
+
+        row[2] +
+        row[3] +
+        row[4] +
+        row[5]
+
+    )
+
+    if total_issues > 0:
+
+        issues_perf_table.setStyle(TableStyle([
+
+            ('BACKGROUND', (0, i), (-1, i), colors.HexColor("#ffe5e5")),
+
+            ('TEXTCOLOR', (0, i), (-1, i), colors.red),
+
+            ('FONTNAME', (0, i), (-1, i), 'Arabic'),
+
+        ]))
+
+# ---------------- إضافة الجدول ---------------- #
+
+elements.append(issues_perf_table)
+
+elements.append(Spacer(1, 1*cm))
+
+elements.append(PageBreak())
+
+# ========================= Footer ========================= #
+
+
+
+# ========================= إنشاء الملف ========================= #
+
+doc.build(elements)
+
+# ========================= زر التحميل ========================= #
+
+st.download_button(
+    label="📄 Download Southern Region Ambulance OperationalPDF Report",
+    data=pdf_buffer.getvalue(),
+    file_name="Southern Region Ambulance Operational Report.pdf",
+    mime="application/pdf"
+)    
+
 
 
 
