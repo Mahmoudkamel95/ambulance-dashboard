@@ -626,13 +626,10 @@ from bidi.algorithm import get_display
 
 
 # ========================= KALAIDO FIX ========================= #
+import plotly.io as pio
+
 pio.kaleido.scope.default_format = "png"
 pio.kaleido.scope.default_scale = 3
-pio.kaleido.scope.chromium_args = [
-    "--no-sandbox",
-    "--disable-setuid-sandbox",
-    "--disable-dev-shm-usage"
-]
 
 
 # ========================= ARABIC SUPPORT ========================= #
