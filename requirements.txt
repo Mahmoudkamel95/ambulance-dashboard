@@ -26,3 +26,13 @@ reportlab
 arabic-reshaper
 python-bidi
 Pillow
+streamlit
+pandas
+plotly
+kaleido
+reportlab
+arabic-reshaper
+python-bidi
+matplotlib
+openpyxl
+Pillow
