@@ -718,20 +718,6 @@ elements.append(title)
 
 elements.append(Spacer(1, 0.5*cm))
 
-# ========================= اسم المدير ========================= #
-
-manager_name = Paragraph(
-
-    arabic_text(
-        "رئيس المنطقة الجنوبية : د / أحمد سيف"
-    ),
-
-    arabic_style
-)
-
-elements.append(manager_name)
-
-elements.append(Spacer(1, 0.5*cm))
 
 # ========================= تاريخ التقرير ========================= #
 
