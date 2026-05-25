@@ -594,9 +594,19 @@ st.dataframe(styled_df, use_container_width=True)
 fig1.write_image("region_chart.png", scale=4)
 fig2.write_image("gov_chart.png", scale=4)
 
+# ========================= تثبيت المكتبات المطلوبة ========================= #
+# requirements.txt
+# streamlit
+# reportlab
+# arabic-reshaper
+# python-bidi
+# kaleido
+
 # ========================= PDF REPORT ========================= #
 
+import streamlit as st
 import arabic_reshaper
+
 from bidi.algorithm import get_display
 
 from reportlab.platypus import (
@@ -610,15 +620,18 @@ from reportlab.platypus import (
 )
 
 from reportlab.lib import colors
+
 from reportlab.lib.styles import (
     getSampleStyleSheet,
     ParagraphStyle
 )
 
 from reportlab.lib.pagesizes import A4, landscape
+
 from reportlab.lib.units import cm
 
 from reportlab.pdfbase import pdfmetrics
+
 from reportlab.pdfbase.ttfonts import TTFont
 
 from io import BytesIO
@@ -629,16 +642,19 @@ def arabic_text(text):
 
     text = str(text)
 
-    reshaped = arabic_reshaper.reshape(text)
+    reshaped_text = arabic_reshaper.reshape(text)
 
-    bidi_text = get_display(reshaped)
+    bidi_text = get_display(reshaped_text)
 
     return bidi_text
 
 # ========================= تسجيل الخط العربي ========================= #
+# ضع ملف الخط داخل نفس فولدر المشروع
+# اسم الملف:
+# Amiri-Regular.ttf
 
 pdfmetrics.registerFont(
-    TTFont('Arabic', 'Cairo-Regular.ttf')
+    TTFont('Arabic', 'Amiri-Regular.ttf')
 )
 
 # ========================= إنشاء الـ PDF ========================= #
@@ -658,83 +674,77 @@ elements = []
 
 styles = getSampleStyleSheet()
 
-# ========================= Arabic Styles ========================= #
+# ========================= ستايل عربي ========================= #
 
 arabic_style = ParagraphStyle(
-
     'ArabicStyle',
-
     parent=styles['BodyText'],
-
     fontName='Arabic',
-
-    fontSize=14,
-
-    leading=24,
-
-    alignment=2,  # Right Align
+    fontSize=16,
+    leading=28,
+    alignment=2
 )
 
 title_style = ParagraphStyle(
-
     'TitleStyle',
-
     parent=styles['Title'],
-
     fontName='Arabic',
-
-    fontSize=26,
-
+    fontSize=28,
     leading=40,
-
-    alignment=1,
+    alignment=1
 )
 
 heading_style = ParagraphStyle(
-
     'HeadingStyle',
-
     parent=styles['Heading2'],
-
     fontName='Arabic',
-
-    fontSize=18,
-
+    fontSize=20,
     leading=30,
-
-    alignment=2,
+    alignment=2
 )
 
 # ========================= عنوان التقرير ========================= #
 
 title = Paragraph(
 
-    arabic_text("""
-
-    تقرير التشغيل للمنطقة الجنوبية للإسعاف
-
-    
-
-    """),
+    arabic_text(
+        "تقرير التشغيل للمنطقة الجنوبية للإسعاف"
+    ),
 
     title_style
 )
 
 elements.append(title)
 
-elements.append(Spacer(1, 1*cm))
+elements.append(Spacer(1, 0.5*cm))
 
-# ========================= التاريخ ========================= #
+# ========================= اسم المدير ========================= #
 
-elements.append(
+manager_name = Paragraph(
 
-    Paragraph(
+    arabic_text(
+        "رئيس المنطقة الجنوبية : د / أحمد سيف"
+    ),
 
-        arabic_text(f"تاريخ التقرير : {last_day.date()}"),
-
-        arabic_style
-    )
+    arabic_style
 )
+
+elements.append(manager_name)
+
+elements.append(Spacer(1, 0.5*cm))
+
+# ========================= تاريخ التقرير ========================= #
+
+report_date = Paragraph(
+
+    arabic_text(
+        f"تاريخ التقرير : {last_day.date()}"
+    ),
+
+    arabic_style
+)
+
+elements.append(report_date)
 
 elements.append(Spacer(1, 1*cm))
 
@@ -784,41 +794,32 @@ kpi_data = [
 ]
 
 table = Table(
-
     kpi_data,
-
     colWidths=[12*cm, 8*cm],
-
     repeatRows=1
 )
 
 table.setStyle(TableStyle([
 
-    # Header
     ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#1f4e78")),
 
     ('TEXTCOLOR', (0,0), (-1,0), colors.white),
 
-    # Rows
     ('BACKGROUND', (0,1), (-1,-1), colors.whitesmoke),
 
-    # Grid
     ('GRID', (0,0), (-1,-1), 1, colors.grey),
 
-    # Font
     ('FONTNAME', (0,0), (-1,-1), 'Arabic'),
 
-    ('FONTSIZE', (0,0), (-1,-1), 13),
+    ('FONTSIZE', (0,0), (-1,-1), 14),
 
-    # Align
     ('ALIGN', (0,0), (-1,-1), 'CENTER'),
 
     ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
 
-    # Padding
-    ('TOPPADDING', (0,0), (-1,-1), 10),
+    ('TOPPADDING', (0,0), (-1,-1), 12),
 
-    ('BOTTOMPADDING', (0,0), (-1,-1), 10),
+    ('BOTTOMPADDING', (0,0), (-1,-1), 12),
 
 ]))
 
@@ -890,15 +891,11 @@ elements.append(
 
 elements.append(Spacer(1, 0.5*cm))
 
-# تجهيز البيانات
-
 gov_table = gov_grouped.reset_index().copy()
 
 gov_table["نسبة التشغيل"] = gov_table["نسبة التشغيل"].apply(
     lambda x: f"{x:.1f}%"
 )
-
-# بيانات الجدول
 
 table_data = [[
 
@@ -911,8 +908,6 @@ table_data = [[
     arabic_text("نسبة التشغيل")
 
 ]]
-
-# إضافة الصفوف
 
 for _, row in gov_table.iterrows():
 
@@ -928,8 +923,6 @@ for _, row in gov_table.iterrows():
 
     ])
 
-# إنشاء الجدول
-
 gov_perf_table = Table(
 
     table_data,
@@ -939,39 +932,29 @@ gov_perf_table = Table(
     repeatRows=1
 )
 
-# Style
-
 gov_perf_table.setStyle(TableStyle([
 
-    # Header
     ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#1f4e78")),
 
     ('TEXTCOLOR', (0,0), (-1,0), colors.white),
 
-    # Rows
     ('BACKGROUND', (0,1), (-1,-1), colors.whitesmoke),
 
-    # Grid
     ('GRID', (0,0), (-1,-1), 1, colors.grey),
 
-    # Font
     ('FONTNAME', (0,0), (-1,-1), 'Arabic'),
 
-    ('FONTSIZE', (0,0), (-1,-1), 12),
+    ('FONTSIZE', (0,0), (-1,-1), 13),
 
-    # Align
     ('ALIGN', (0,0), (-1,-1), 'CENTER'),
 
     ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
 
-    # Padding
     ('TOPPADDING', (0,0), (-1,-1), 10),
 
     ('BOTTOMPADDING', (0,0), (-1,-1), 10),
 
 ]))
-
-# تلوين المحافظات الضعيفة
 
 for i, row in enumerate(gov_table.itertuples(), start=1):
 
@@ -1005,8 +988,6 @@ elements.append(
 
 elements.append(Spacer(1, 0.5*cm))
 
-# تجهيز البيانات
-
 issues_table = filtered_df.groupby("المحافظه").agg({
 
     "سيارات بالراحة": "sum",
@@ -1018,8 +999,6 @@ issues_table = filtered_df.groupby("المحافظه").agg({
     "سيارات غياب بدون اذن": "sum"
 
 }).reset_index()
-
-# بيانات الجدول
 
 table_data = [[
 
@@ -1034,8 +1013,6 @@ table_data = [[
     arabic_text("غياب بدون إذن")
 
 ]]
-
-# إضافة الصفوف
 
 for _, row in issues_table.iterrows():
 
@@ -1053,8 +1030,6 @@ for _, row in issues_table.iterrows():
 
     ])
 
-# إنشاء الجدول
-
 issues_perf_table = Table(
 
     table_data,
@@ -1064,39 +1039,29 @@ issues_perf_table = Table(
     repeatRows=1
 )
 
-# Style
-
 issues_perf_table.setStyle(TableStyle([
 
-    # Header
     ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#0f172a")),
 
     ('TEXTCOLOR', (0,0), (-1,0), colors.white),
 
-    # Rows
     ('BACKGROUND', (0,1), (-1,-1), colors.whitesmoke),
 
-    # Grid
     ('GRID', (0,0), (-1,-1), 1, colors.grey),
 
-    # Font
     ('FONTNAME', (0,0), (-1,-1), 'Arabic'),
 
-    ('FONTSIZE', (0,0), (-1,-1), 11),
+    ('FONTSIZE', (0,0), (-1,-1), 12),
 
-    # Align
     ('ALIGN', (0,0), (-1,-1), 'CENTER'),
 
     ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
 
-    # Padding
     ('TOPPADDING', (0,0), (-1,-1), 10),
 
     ('BOTTOMPADDING', (0,0), (-1,-1), 10),
 
 ]))
-
-# تلوين المحافظات اللي فيها مشاكل
 
 for i, row in enumerate(issues_table.itertuples(), start=1):
 
