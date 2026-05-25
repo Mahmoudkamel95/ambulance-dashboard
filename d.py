@@ -609,6 +609,7 @@ st.download_button(
 import streamlit as st
 import plotly.io as pio
 import io
+import tempfile
 
 from reportlab.platypus import (
     SimpleDocTemplate, Paragraph, Spacer, Image,
@@ -619,36 +620,28 @@ from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.units import cm
 from reportlab.lib.styles import getSampleStyleSheet
 
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
-
 import arabic_reshaper
 from bidi.algorithm import get_display
 
 
-# ========================= ARABIC SUPPORT ========================= #
+# ========================= ARABIC ========================= #
 def arabic_text(text):
     return get_display(arabic_reshaper.reshape(str(text)))
 
 
-# ❌ مهم: لا تستخدم arial.ttf في السيرفر
-# استخدم الخط الافتراضي بدل تسجيل خط خارجي
-# pdfmetrics.registerFont(TTFont('Arabic', 'arial.ttf'))
+# ========================= SAFE IMAGE EXPORT ========================= #
+def fig_to_img(fig):
+    tmp = tempfile.NamedTemporaryFile(suffix=".png", delete=False)
+    fig.write_image(tmp.name, scale=3)
+    return tmp.name
 
 
-# ========================= FIX KALAIDO (IMPORTANT) ========================= #
-# لازم kaleido يكون متثبت في requirements.txt
-# kaleido>=0.2.1
-
-# ========================= CONVERT PLOTS TO IMAGES ========================= #
-# مهم: استخدم to_image بدل write_image
-
-region_img = fig1.to_image(format="png", scale=3)
-gov_img = fig2.to_image(format="png", scale=3)
-trend_img = fig.to_image(format="png", scale=3)
+region_path = fig_to_img(fig1)
+gov_path = fig_to_img(fig2)
+trend_path = fig_to_img(fig)
 
 
-# ========================= PDF BUFFER ========================= #
+# ========================= PDF SETUP ========================= #
 pdf_buffer = io.BytesIO()
 
 doc = SimpleDocTemplate(
@@ -667,7 +660,7 @@ styles = getSampleStyleSheet()
 # ========================= TITLE ========================= #
 elements.append(
     Paragraph(
-        "<font size=22><b>🚑 Operational Report</b></font>",
+        "<font size=22 color='#1f4e78'><b>🚑 Operational Report</b></font>",
         styles["Title"]
     )
 )
@@ -701,27 +694,23 @@ elements.append(PageBreak())
 
 
 # ========================= IMAGE HELPER ========================= #
-def add_image(img_bytes, title):
+def add_chart(title, img_path):
     elements.append(Paragraph(title, styles["Heading2"]))
     elements.append(Spacer(1, 0.3*cm))
-
-    img_buffer = io.BytesIO(img_bytes)
-
-    elements.append(
-        Image(img_buffer, width=24*cm, height=10*cm)
-    )
+    elements.append(Image(img_path, width=24*cm, height=10*cm))
     elements.append(PageBreak())
 
 
 # ========================= CHARTS ========================= #
-add_image(region_img, "📊 Operation By Region")
-add_image(gov_img, "📊 Operation By Governorate")
-add_image(trend_img, "📈 Trend Analysis")
+add_chart("📊 Operation By Region", region_path)
+add_chart("📊 Operation By Governorate", gov_path)
+add_chart("📈 Trend Analysis", trend_path)
 
 
-# ========================= GOVERNORATE TABLE ========================= #
+# ========================= GOV TABLE ========================= #
 gov_table = gov_grouped.reset_index().copy()
 gov_table["نسبة التشغيل"] = gov_table["نسبة التشغيل"].apply(lambda x: f"{x:.1f}%")
+
 
 table_data = [[
     arabic_text("المحافظة"),
@@ -738,6 +727,7 @@ for _, row in gov_table.iterrows():
         row["نسبة التشغيل"]
     ])
 
+
 gov_perf_table = Table(table_data, colWidths=[7*cm, 6*cm, 6*cm, 5*cm])
 
 gov_perf_table.setStyle(TableStyle([
@@ -751,14 +741,14 @@ gov_perf_table.setStyle(TableStyle([
 elements.append(gov_perf_table)
 
 
-# ========================= BUILD PDF ========================= #
+# ========================= BUILD ========================= #
 doc.build(elements)
 
 
 # ========================= DOWNLOAD ========================= #
 st.download_button(
-    "📄 Download PDF Report",
-    data=pdf_buffer.getvalue(),
+    "📄 Download Operational Report",
+    pdf_buffer.getvalue(),
     file_name="Operational_Report.pdf",
     mime="application/pdf"
 )
