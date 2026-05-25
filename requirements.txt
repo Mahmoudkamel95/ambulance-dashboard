@@ -1,6 +1,7 @@
 ﻿xlsxwriter==3.2.9
 streamlit
 pandas
+kaleido==0.2.1
 plotly
 openpyxl
 matplotlib
