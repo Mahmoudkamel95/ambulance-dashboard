@@ -966,7 +966,7 @@ elements.append(
 
     Paragraph(
 
-        arabic_text("تفاصيل المشكلات التشغيلية"),
+        arabic_text("تفاصيل التشغيل"),
 
         heading_style
     )
