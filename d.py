@@ -589,45 +589,45 @@ styled_df = styled_df.format(
 st.dataframe(styled_df, use_container_width=True)
 
 
-# ========================= IMPORTS ========================= #
+# ========================= حفظ الشارتات كصور HD ========================= #
+fig1.write_image("region_chart.png", scale=3)
+fig2.write_image("gov_chart.png", scale=3)
+fig.write_image("trend_chart.png", scale=3)
+
+
+# ========================= PDF REPORT ========================= #
 import streamlit as st
-import plotly.io as pio
 import arabic_reshaper
 from bidi.algorithm import get_display
 
 from reportlab.platypus import (
-    SimpleDocTemplate, Paragraph, Spacer, Image,
-    Table, TableStyle, PageBreak
+    SimpleDocTemplate, Paragraph, Spacer,
+    Image, Table, TableStyle, PageBreak
 )
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.units import cm
 from reportlab.lib.styles import getSampleStyleSheet
+
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 
 from io import BytesIO
-import os
 
-# ========================= FIX KALAIDO ========================= #
-pio.kaleido.scope.default_format = "png"
-pio.kaleido.scope.default_scale = 3
 
-# ========================= ARABIC ========================= #
+# ========================= ARABIC FIX ========================= #
 def arabic_text(text):
     return get_display(arabic_reshaper.reshape(str(text)))
 
-# ========================= FONT (IMPORTANT FIX) ========================= #
-# ⚠️ لازم تحط الخط داخل فولدر المشروع: fonts/Amiri-Regular.ttf
-pdfmetrics.registerFont(TTFont('Arabic', 'fonts/Amiri-Regular.ttf'))
 
-# ========================= SAVE CHARTS ========================= #
-fig1.write_image("region_chart.png", scale=3)
-fig2.write_image("gov_chart.png", scale=3)
-fig.write_image("trend_chart.png", scale=3)
+# ========================= FONT FIX (IMPORTANT) ========================= #
+pdfmetrics.registerFont(
+    TTFont('Arabic', '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf')
+)
 
-# ========================= PDF BUFFER ========================= #
+
+# ========================= PDF SETUP ========================= #
 pdf_buffer = BytesIO()
 
 doc = SimpleDocTemplate(
@@ -642,16 +642,24 @@ doc = SimpleDocTemplate(
 elements = []
 styles = getSampleStyleSheet()
 
+
 # ========================= TITLE ========================= #
 elements.append(
     Paragraph(
-        "<font size=24 color='#1f4e78'><b>🚑 Southern Region Report</b></font>",
-        styles["Title"]
+        "<font size=24 color='#1f4e78'><b>🚑 Southern Region Operational Report</b></font>",
+        styles['Title']
     )
 )
-elements.append(Spacer(1, 1*cm))
 
-# ========================= KPI ========================= #
+elements.append(Spacer(1, 1*cm))
+elements.append(
+    Paragraph(f"Report Date: {last_day.date()}", styles['BodyText'])
+)
+
+elements.append(PageBreak())
+
+
+# ========================= KPI TABLE ========================= #
 kpi_data = [
     [arabic_text("المؤشر"), arabic_text("القيمة")],
     [arabic_text("إجمالي السيارات"), int(total_cars)],
@@ -675,29 +683,70 @@ table.setStyle(TableStyle([
 elements.append(table)
 elements.append(PageBreak())
 
-# ========================= IMAGE HELPER ========================= #
-def add_chart(title, path):
-    elements.append(Paragraph(title, styles["Heading2"]))
-    elements.append(Spacer(1, 0.5*cm))
-    elements.append(Image(path, width=24*cm, height=10*cm))
-    elements.append(PageBreak())
 
 # ========================= CHARTS ========================= #
-add_chart("📊 Operation By Region", "region_chart.png")
-add_chart("📊 Operation By Governorate", "gov_chart.png")
-add_chart("📈 Trend Analysis", "trend_chart.png")
+elements.append(Paragraph("📊 Operation By Region", styles["Heading2"]))
+elements.append(Spacer(1, 0.5*cm))
+elements.append(Image("region_chart.png", width=24*cm, height=10*cm))
+elements.append(PageBreak())
+
+
+elements.append(Paragraph("📊 Operation By Governorate", styles["Heading2"]))
+elements.append(Spacer(1, 0.5*cm))
+elements.append(Image("gov_chart.png", width=24*cm, height=10*cm))
+elements.append(PageBreak())
+
+
+elements.append(Paragraph("📈 Trend Analysis", styles["Heading2"]))
+elements.append(Spacer(1, 0.5*cm))
+elements.append(Image("trend_chart.png", width=24*cm, height=10*cm))
+elements.append(PageBreak())
+
+
+# ========================= GOV TABLE ========================= #
+gov_table = gov_grouped.reset_index().copy()
+gov_table["نسبة التشغيل"] = gov_table["نسبة التشغيل"].apply(lambda x: f"{x:.1f}%")
+
+table_data = [[
+    arabic_text("المحافظة"),
+    arabic_text("إجمالي التشغيل"),
+    arabic_text("خارج التشغيل"),
+    arabic_text("نسبة التشغيل")
+]]
+
+for _, row in gov_table.iterrows():
+    table_data.append([
+        arabic_text(str(row["المحافظه"])),
+        int(row["اجمالي سيارات التشغيل"]),
+        int(row["اجمالي سيارات المنطقه العامله  ولكن خارج التشغيل"]),
+        row["نسبة التشغيل"]
+    ])
+
+gov_perf_table = Table(table_data, colWidths=[7*cm, 6*cm, 6*cm, 5*cm])
+
+gov_perf_table.setStyle(TableStyle([
+    ("BACKGROUND", (0,0), (-1,0), colors.HexColor("#1f4e78")),
+    ("TEXTCOLOR", (0,0), (-1,0), colors.white),
+    ("BACKGROUND", (0,1), (-1,-1), colors.whitesmoke),
+    ("GRID", (0,0), (-1,-1), 1, colors.grey),
+    ("FONTNAME", (0,0), (-1,-1), "Arabic"),
+    ("ALIGN", (0,0), (-1,-1), "CENTER"),
+]))
+
+elements.append(gov_perf_table)
+
 
 # ========================= BUILD ========================= #
 doc.build(elements)
+
 
 # ========================= DOWNLOAD ========================= #
 st.download_button(
     label="📄 Download Report",
     data=pdf_buffer.getvalue(),
-    file_name="report.pdf",
+    file_name="Southern_Region_Report.pdf",
     mime="application/pdf"
 )
-
 
 
 
