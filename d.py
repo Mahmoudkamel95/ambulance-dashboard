@@ -819,7 +819,7 @@ elements.append(
 
     Paragraph(
 
-        arabic_text("التشغيل حسب الإقليم"),
+        arabic_text("نسبة تشغيل الاقاليم"),
 
         heading_style
     )
@@ -844,7 +844,7 @@ elements.append(
 
     Paragraph(
 
-        arabic_text("التشغيل حسب المحافظة"),
+        arabic_text("نسبة تشغيل المحافظات"),
 
         heading_style
     )
