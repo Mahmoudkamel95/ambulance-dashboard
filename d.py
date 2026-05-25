@@ -589,60 +589,46 @@ styled_df = styled_df.format(
 st.dataframe(styled_df, use_container_width=True)
 
 
-# ---------------- Excel Export ---------------- #
-from io import BytesIO
-
-output = BytesIO()
-
-with pd.ExcelWriter(output, engine='openpyxl') as writer:
-    filtered_df.to_excel(writer, index=False, sheet_name='Data')
-
-st.download_button(
-    "📥 Download Excel",
-    data=output.getvalue(),
-    file_name="Data.xlsx",
-    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-)
-
-
 # ========================= IMPORTS ========================= #
 import streamlit as st
 import plotly.io as pio
-import io
-import tempfile
+import arabic_reshaper
+from bidi.algorithm import get_display
 
 from reportlab.platypus import (
     SimpleDocTemplate, Paragraph, Spacer, Image,
     Table, TableStyle, PageBreak
 )
+
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.units import cm
 from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 
-import arabic_reshaper
-from bidi.algorithm import get_display
+from io import BytesIO
+import os
 
+# ========================= FIX KALAIDO ========================= #
+pio.kaleido.scope.default_format = "png"
+pio.kaleido.scope.default_scale = 3
 
 # ========================= ARABIC ========================= #
 def arabic_text(text):
     return get_display(arabic_reshaper.reshape(str(text)))
 
+# ========================= FONT (IMPORTANT FIX) ========================= #
+# ⚠️ لازم تحط الخط داخل فولدر المشروع: fonts/Amiri-Regular.ttf
+pdfmetrics.registerFont(TTFont('Arabic', 'fonts/Amiri-Regular.ttf'))
 
-# ========================= SAFE IMAGE EXPORT ========================= #
-def fig_to_img(fig):
-    tmp = tempfile.NamedTemporaryFile(suffix=".png", delete=False)
-    fig.write_image(tmp.name, scale=3)
-    return tmp.name
+# ========================= SAVE CHARTS ========================= #
+fig1.write_image("region_chart.png", scale=3)
+fig2.write_image("gov_chart.png", scale=3)
+fig.write_image("trend_chart.png", scale=3)
 
-
-region_path = fig_to_img(fig1)
-gov_path = fig_to_img(fig2)
-trend_path = fig_to_img(fig)
-
-
-# ========================= PDF SETUP ========================= #
-pdf_buffer = io.BytesIO()
+# ========================= PDF BUFFER ========================= #
+pdf_buffer = BytesIO()
 
 doc = SimpleDocTemplate(
     pdf_buffer,
@@ -656,27 +642,23 @@ doc = SimpleDocTemplate(
 elements = []
 styles = getSampleStyleSheet()
 
-
 # ========================= TITLE ========================= #
 elements.append(
     Paragraph(
-        "<font size=22 color='#1f4e78'><b>🚑 Operational Report</b></font>",
+        "<font size=24 color='#1f4e78'><b>🚑 Southern Region Report</b></font>",
         styles["Title"]
     )
 )
-elements.append(Spacer(1, 0.5*cm))
+elements.append(Spacer(1, 1*cm))
 
-
-# ========================= KPI TABLE ========================= #
+# ========================= KPI ========================= #
 kpi_data = [
     [arabic_text("المؤشر"), arabic_text("القيمة")],
-    [arabic_text("🚑 إجمالي السيارات"), int(total_cars)],
-    [arabic_text("⚙️ إجمالي التشغيل"), int(total_operation)],
-    [arabic_text("❌ خارج التشغيل"), int(outside_operation)],
-    [arabic_text("✅ داخل التشغيل"), int(inside_operation)],
-    [arabic_text("📈 نسبة التشغيل"), f"{operation_ratio:.1f}%"],
-    [arabic_text("🏭 سيارات التوكيل"), int(agency_cars)],
-    [arabic_text("🚫 السيارات المعطلة"), int(broken_cars)],
+    [arabic_text("إجمالي السيارات"), int(total_cars)],
+    [arabic_text("إجمالي التشغيل"), int(total_operation)],
+    [arabic_text("خارج التشغيل"), int(outside_operation)],
+    [arabic_text("داخل التشغيل"), int(inside_operation)],
+    [arabic_text("نسبة التشغيل"), f"{operation_ratio:.1f}%"],
 ]
 
 table = Table(kpi_data, colWidths=[12*cm, 8*cm])
@@ -686,70 +668,33 @@ table.setStyle(TableStyle([
     ("TEXTCOLOR", (0,0), (-1,0), colors.white),
     ("BACKGROUND", (0,1), (-1,-1), colors.whitesmoke),
     ("GRID", (0,0), (-1,-1), 1, colors.grey),
+    ("FONTNAME", (0,0), (-1,-1), "Arabic"),
     ("ALIGN", (0,0), (-1,-1), "CENTER"),
 ]))
 
 elements.append(table)
 elements.append(PageBreak())
 
-
 # ========================= IMAGE HELPER ========================= #
-def add_chart(title, img_path):
+def add_chart(title, path):
     elements.append(Paragraph(title, styles["Heading2"]))
-    elements.append(Spacer(1, 0.3*cm))
-    elements.append(Image(img_path, width=24*cm, height=10*cm))
+    elements.append(Spacer(1, 0.5*cm))
+    elements.append(Image(path, width=24*cm, height=10*cm))
     elements.append(PageBreak())
 
-
 # ========================= CHARTS ========================= #
-add_chart("📊 Operation By Region", region_path)
-add_chart("📊 Operation By Governorate", gov_path)
-add_chart("📈 Trend Analysis", trend_path)
-
-
-# ========================= GOV TABLE ========================= #
-gov_table = gov_grouped.reset_index().copy()
-gov_table["نسبة التشغيل"] = gov_table["نسبة التشغيل"].apply(lambda x: f"{x:.1f}%")
-
-
-table_data = [[
-    arabic_text("المحافظة"),
-    arabic_text("إجمالي التشغيل"),
-    arabic_text("خارج التشغيل"),
-    arabic_text("نسبة التشغيل")
-]]
-
-for _, row in gov_table.iterrows():
-    table_data.append([
-        arabic_text(str(row["المحافظه"])),
-        int(row["اجمالي سيارات التشغيل"]),
-        int(row["اجمالي سيارات المنطقه العامله  ولكن خارج التشغيل"]),
-        row["نسبة التشغيل"]
-    ])
-
-
-gov_perf_table = Table(table_data, colWidths=[7*cm, 6*cm, 6*cm, 5*cm])
-
-gov_perf_table.setStyle(TableStyle([
-    ("BACKGROUND", (0,0), (-1,0), colors.HexColor("#1f4e78")),
-    ("TEXTCOLOR", (0,0), (-1,0), colors.white),
-    ("BACKGROUND", (0,1), (-1,-1), colors.whitesmoke),
-    ("GRID", (0,0), (-1,-1), 1, colors.grey),
-    ("ALIGN", (0,0), (-1,-1), "CENTER"),
-]))
-
-elements.append(gov_perf_table)
-
+add_chart("📊 Operation By Region", "region_chart.png")
+add_chart("📊 Operation By Governorate", "gov_chart.png")
+add_chart("📈 Trend Analysis", "trend_chart.png")
 
 # ========================= BUILD ========================= #
 doc.build(elements)
 
-
 # ========================= DOWNLOAD ========================= #
 st.download_button(
-    "📄 Download Operational Report",
-    pdf_buffer.getvalue(),
-    file_name="Operational_Report.pdf",
+    label="📄 Download Report",
+    data=pdf_buffer.getvalue(),
+    file_name="report.pdf",
     mime="application/pdf"
 )
 
