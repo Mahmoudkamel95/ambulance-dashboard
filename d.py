@@ -267,7 +267,10 @@ gov_grouped = filtered_df.groupby("المحافظه").agg({
     "اجمالي سيارات التشغيل": "sum",
     "اجمالي سيارات المنطقه العامله  ولكن خارج التشغيل": "sum"
 })
-
+gov_grouped["داخل التشغيل"] = (
+    gov_grouped["اجمالي سيارات التشغيل"]
+    - gov_grouped["اجمالي سيارات المنطقه العامله  ولكن خارج التشغيل"]
+)
 gov_grouped["نسبة التشغيل"] = gov_grouped.apply(
     lambda x: ((x["اجمالي سيارات التشغيل"] - x["اجمالي سيارات المنطقه العامله  ولكن خارج التشغيل"])
                / x["اجمالي سيارات التشغيل"]) * 100
@@ -915,7 +918,7 @@ gov_perf_table = Table(
 
     table_data,
 
-    colWidths=[7*cm, 6*cm, 6*cm, 5*cm],
+    colWidths=[6*cm, 5*cm, 5*cm, 5*cm, 4*cm],
 
     repeatRows=1
 )
