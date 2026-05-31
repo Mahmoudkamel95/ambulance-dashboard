@@ -888,9 +888,9 @@ table_data = [[
     arabic_text("المحافظة"),
 
     arabic_text("إجمالي التشغيل"),
-    arabic_text("داخل التشغيل"),
-
+    
     arabic_text("خارج التشغيل"),
+    arabic_text("داخل التشغيل"),
 
     arabic_text("نسبة التشغيل")
 
@@ -905,6 +905,7 @@ for _, row in gov_table.iterrows():
         int(row["اجمالي سيارات التشغيل"]),
 
         int(row["اجمالي سيارات المنطقه العامله  ولكن خارج التشغيل"]),
+        int(row["داخل التشغيل"]),
 
         row["نسبة التشغيل"]
 
