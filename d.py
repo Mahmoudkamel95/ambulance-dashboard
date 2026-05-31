@@ -888,6 +888,7 @@ table_data = [[
     arabic_text("المحافظة"),
 
     arabic_text("إجمالي التشغيل"),
+    arabic_text("داخل التشغيل"),
 
     arabic_text("خارج التشغيل"),
 
